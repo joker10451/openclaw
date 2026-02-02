@@ -27,7 +27,7 @@ OpenClaw 可以在你已经使用的任何聊天应用上与你对话。每个�
 - [Mattermost](/channels/mattermost) — Bot API + WebSocket；频道、群组、私信（插件，需单独安装）。
 - [Signal](/channels/signal) — signal-cli；注重隐私。
 - [BlueBubbles](/channels/bluebubbles) — **推荐用于 iMessage**；使用 BlueBubbles macOS 服务器 REST API，功能完整（编辑、撤回、特效、回应、群组管理——编辑功能在 macOS 26 Tahoe 上目前不可用）。
-- [iMessage](/channels/imessage) — 仅限 macOS；通过 imsg 原生集成（旧版，新设置建议使用 BlueBubbles）。
+- [iMessage（旧版）](/channels/imessage) — 通过 imsg CLI 的旧版 macOS 集成（已弃用，新设置请使用 BlueBubbles）。
 - [Microsoft Teams](/channels/msteams) — Bot Framework；企业支持（插件，需单独安装）。
 - [LINE](/channels/line) — LINE Messaging API 机器人（插件，需单独安装）。
 - [Nextcloud Talk](/channels/nextcloud-talk) — 通过 Nextcloud Talk 的自托管聊天（插件，需单独安装）。
