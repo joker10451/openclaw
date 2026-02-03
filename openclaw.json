@@ -1,0 +1,75 @@
+{
+    "auth": {
+        "profiles": {
+            "deepseek:default": {
+                "provider": "deepseek",
+                "mode": "api_key"
+            }
+        }
+    },
+    "agents": {
+        "defaults": {
+            "model": {
+                "primary": "${OPENCLAW_AGENTS_DEFAULTS_MODEL_PRIMARY}"
+            },
+            "workspace": "/app/workspace",
+            "models": {
+                "deepseek/deepseek-chat": {
+                    "alias": "DeepSeek V3 (Direct)"
+                },
+                "deepseek/deepseek-reasoner": {
+                    "alias": "DeepSeek R1 (Direct)"
+                }
+            }
+        }
+    },
+    "channels": {
+        "telegram": {
+            "enabled": true,
+            "botToken": "${OPENCLAW_CHANNELS_TELEGRAM_BOT_TOKEN}",
+            "allowFrom": [
+                "${OPENCLAW_CHANNELS_TELEGRAM_ALLOWED_USER}"
+            ]
+        }
+    },
+    "gateway": {
+        "port": 8080,
+        "mode": "lan",
+        "bind": "lan",
+        "auth": {
+            "mode": "token",
+            "token": "${OPENCLAW_GATEWAY_TOKEN}"
+        }
+    },
+    "models": {
+        "providers": {
+            "deepseek": {
+                "baseUrl": "https://api.deepseek.com",
+                "api": "openai-completions",
+                "apiKey": "${OPENCLAW_AUTH_DEEPSEEK_DEFAULT_KEY}",
+                "models": [
+                    {
+                        "id": "deepseek-chat",
+                        "name": "DeepSeek Chat",
+                        "reasoning": false,
+                        "contextWindow": 128000,
+                        "maxTokens": 8192,
+                        "input": [
+                            "text"
+                        ]
+                    },
+                    {
+                        "id": "deepseek-reasoner",
+                        "name": "DeepSeek Reasoner",
+                        "reasoning": true,
+                        "contextWindow": 128000,
+                        "maxTokens": 8192,
+                        "input": [
+                            "text"
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
