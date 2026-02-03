@@ -17,7 +17,7 @@ import {
   writeCache,
 } from "./web-shared.js";
 
-const SEARCH_PROVIDERS = ["brave", "perplexity"] as const;
+const SEARCH_PROVIDERS = ["brave", "perplexity", "serper"] as const;
 const DEFAULT_SEARCH_COUNT = 5;
 const MAX_SEARCH_COUNT = 10;
 
@@ -67,8 +67,8 @@ const WebSearchSchema = Type.Object({
 
 type WebSearchConfig = NonNullable<OpenClawConfig["tools"]>["web"] extends infer Web
   ? Web extends { search?: infer Search }
-    ? Search
-    : undefined
+  ? Search
+  : undefined
   : undefined;
 
 type BraveSearchResult = {
@@ -137,6 +137,14 @@ function missingSearchKeyPayload(provider: (typeof SEARCH_PROVIDERS)[number]) {
       docs: "https://docs.openclaw.ai/tools/web",
     };
   }
+  if (provider === "serper") {
+    return {
+      error: "missing_serper_api_key",
+      message:
+        "web_search (serper) needs an API key. Set SERPER_API_KEY in the Gateway environment, or configure tools.web.search.serper.apiKey.",
+      docs: "https://serper.dev",
+    };
+  }
   return {
     error: "missing_brave_api_key",
     message: `web_search needs a Brave Search API key. Run \`${formatCliCommand("openclaw configure --section web")}\` to store it, or set BRAVE_API_KEY in the Gateway environment.`,
@@ -151,6 +159,9 @@ function resolveSearchProvider(search?: WebSearchConfig): (typeof SEARCH_PROVIDE
       : "";
   if (raw === "perplexity") {
     return "perplexity";
+  }
+  if (raw === "serper") {
+    return "serper";
   }
   if (raw === "brave") {
     return "brave";
@@ -309,6 +320,47 @@ function resolveSiteName(url: string | undefined): string | undefined {
   }
 }
 
+async function runSerperSearch(params: {
+  query: string;
+  count: number;
+  apiKey: string;
+  timeoutSeconds: number;
+}): Promise<Record<string, unknown>> {
+  const res = await fetch("https://google.serper.dev/search", {
+    method: "POST",
+    headers: {
+      "X-API-KEY": params.apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      q: params.query,
+      num: params.count,
+    }),
+    signal: withTimeout(undefined, params.timeoutSeconds * 1000),
+  });
+
+  if (!res.ok) {
+    const detail = await readResponseText(res);
+    throw new Error(`Serper API error (${res.status}): ${detail || res.statusText}`);
+  }
+
+  const data = (await res.json()) as any;
+  const results = Array.isArray(data.organic) ? data.organic : [];
+  const mapped = results.map((entry: any) => ({
+    title: entry.title ? wrapWebContent(entry.title, "web_search") : "",
+    url: entry.link || "",
+    description: entry.snippet ? wrapWebContent(entry.snippet, "web_search") : "",
+    siteName: resolveSiteName(entry.link) || undefined,
+  }));
+
+  return {
+    query: params.query,
+    provider: "serper",
+    count: mapped.length,
+    results: mapped,
+  };
+}
+
 async function runPerplexitySearch(params: {
   query: string;
   apiKey: string;
@@ -375,6 +427,18 @@ async function runWebSearch(params: {
   }
 
   const start = Date.now();
+
+  if (params.provider === "serper") {
+    const result = await runSerperSearch({
+      query: params.query,
+      count: params.count,
+      apiKey: params.apiKey,
+      timeoutSeconds: params.timeoutSeconds,
+    });
+    const payload = { ...result, tookMs: Date.now() - start };
+    writeCache(SEARCH_CACHE, cacheKey, payload, params.cacheTtlMs);
+    return payload;
+  }
 
   if (params.provider === "perplexity") {
     const { content, citations } = await runPerplexitySearch({
@@ -473,7 +537,9 @@ export function createWebSearchTool(options?: {
   const description =
     provider === "perplexity"
       ? "Search the web using Perplexity Sonar (direct or via OpenRouter). Returns AI-synthesized answers with citations from real-time web search."
-      : "Search the web using Brave Search API. Supports region-specific and localized search via country and language parameters. Returns titles, URLs, and snippets for fast research.";
+      : provider === "serper"
+        ? "Search the web using Google Search API (via Serper.dev). Fast and reliable Google Search results."
+        : "Search the web using Brave Search API. Supports region-specific and localized search via country and language parameters. Returns titles, URLs, and snippets for fast research.";
 
   return {
     label: "Web Search",
@@ -484,7 +550,11 @@ export function createWebSearchTool(options?: {
       const perplexityAuth =
         provider === "perplexity" ? resolvePerplexityApiKey(perplexityConfig) : undefined;
       const apiKey =
-        provider === "perplexity" ? perplexityAuth?.apiKey : resolveSearchApiKey(search);
+        provider === "perplexity"
+          ? perplexityAuth?.apiKey
+          : provider === "serper"
+            ? (process.env.SERPER_API_KEY ?? "").trim() || (search as any)?.serper?.apiKey
+            : resolveSearchApiKey(search);
 
       if (!apiKey) {
         return jsonResult(missingSearchKeyPayload(provider));

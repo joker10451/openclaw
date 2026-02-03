@@ -36,8 +36,8 @@
         "web": {
             "search": {
                 "enabled": true,
-                "provider": "brave",
-                "apiKey": "${BRAVE_API_KEY}"
+                "provider": "serper",
+                "apiKey": "${SERPER_API_KEY}"
             },
             "fetch": {
                 "enabled": true
