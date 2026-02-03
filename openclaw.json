@@ -54,6 +54,16 @@
             }
         }
     },
+    "skills": {
+        "install": {
+            "nodeManager": "pnpm"
+        },
+        "entries": {
+            "github": {
+                "enabled": true
+            }
+        }
+    },
     "gateway": {
         "port": 8080,
         "mode": "lan",
