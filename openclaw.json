@@ -32,6 +32,28 @@
             ]
         }
     },
+    "tools": {
+        "web": {
+            "search": {
+                "enabled": true,
+                "provider": "brave",
+                "apiKey": "${BRAVE_API_KEY}"
+            },
+            "fetch": {
+                "enabled": true
+            }
+        }
+    },
+    "plugins": {
+        "slots": {
+            "memory": "memory-lancedb"
+        },
+        "entries": {
+            "memory-lancedb": {
+                "enabled": true
+            }
+        }
+    },
     "gateway": {
         "port": 8080,
         "mode": "lan",
